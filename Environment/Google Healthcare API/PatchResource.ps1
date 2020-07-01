@@ -20,4 +20,4 @@ Invoke-RestMethod `
   -Headers $headers `
   -ContentType: "application/json-patch+json" `
   -Body $patch `
-  -Uri "https://healthcare.googleapis.com/v1beta1/projects/$PROJECT_ID/locations/$LOCATION/datasets/$DATASET_ID/fhirStores/$FHIR_STORE_ID/fhir/Observation/$OBSERVATION_ID" | ConvertTo-Json
+  -Uri "https://healthcare.googleapis.com/v1beta1/projects/iothealthcare-269209/locations/europe-west4/datasets/IoTHealthcareDataset/fhirStores/ObservationsDataStore/fhir/Observation/58bfeb6f-f3bd-424c-a6f9-2815af956ae9" | ConvertTo-Json
