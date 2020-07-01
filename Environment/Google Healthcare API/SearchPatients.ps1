@@ -10,4 +10,4 @@ Invoke-RestMethod `
   -Method Post `
   -Headers $headers `
   -ContentType: "application/fhir+json; charset=utf-8" `
-  -Uri "https://healthcare.googleapis.com/v1beta1/projects/$PROJECT_ID/locations/$LOCATION/datasets/$DATASET_ID/fhirStores/$FHIR_STORE_ID/fhir/Patient/_search" | ConvertTo-Json
+  -Uri "https://healthcare.googleapis.com/v1beta1/projects/$PROJECT_ID/locations/$LOCATION/datasets/$DATASET_ID/fhirStores/$FHIR_STORE_ID/fhir/Patient/_search" | ConvertTo-Json -Depth 4

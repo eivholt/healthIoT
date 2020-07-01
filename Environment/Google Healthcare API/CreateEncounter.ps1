@@ -4,7 +4,10 @@ $PROJECT_ID = "iothealthcare-269209"
 $LOCATION = "europe-west4"
 $DATASET_ID = "IoTHealthcareDataset"
 $FHIR_STORE_ID = "ObservationsDataStore"
-$PATIENT_ID = "9f6a2621-0f66-464f-bd9b-f6a54f2222de"
+#$PATIENT_ID = "9f6a2621-0f66-464f-bd9b-f6a54f2222de" #Ripley
+#$PATIENT_ID = "d0be3465-6956-46b0-96fb-9f844a093902" #Weyland
+$PATIENT_ID = "1c8fa469-2b2b-4da2-9205-51177c127244" #Hicks
+
 
 $encounter = '{
   "resourceType": "Encounter",
@@ -18,20 +21,20 @@ $encounter = '{
     {
       "resourceType": "Location",
       "id": "home",
-      "description": "Clients home",
+      "description": "Patients home",
       "mode": "kind"
     }
   ],
   "reason": [
     {
-      "text": "The patient had an abnormal heart rate and respiratory rate. She was concerned about this."
+      "text": "The patient suffered acid burns."
     }
   ],
   "subject": {
     "reference": "Patient/' + $PATIENT_ID + '"
   },
   "period": {
-    "start": "2020-06-25T16:00:00+02:00"
+    "start": "2020-06-27T16:00:00+02:00"
   }  
 }'
 

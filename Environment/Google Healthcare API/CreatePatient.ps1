@@ -5,18 +5,48 @@ $LOCATION = "europe-west4"
 $DATASET_ID = "IoTHealthcareDataset"
 $FHIR_STORE_ID = "ObservationsDataStore"
 
-  $patient = '{
+#$patient = '{
+#  "name": [
+#    {
+#      "use": "official",
+#      "family": "Ripley",
+#      "given": [
+#        "Ellen"
+#      ]
+#    }
+#  ],
+#  "gender": "female",
+#  "birthDate": "1970-01-01",
+#  "resourceType": "Patient"
+#}'
+
+#$patient = '{
+#  "name": [
+#    {
+#      "use": "official",
+#      "family": "Weyland",
+#      "given": [
+#        "Michael Bishop"
+#      ]
+#    }
+#  ],
+#  "gender": "male",
+#  "birthDate": "1970-02-02",
+#  "resourceType": "Patient"
+#}'
+
+$patient = '{
   "name": [
     {
       "use": "official",
-      "family": "Ripley",
+      "family": "Hicks",
       "given": [
-        "Ellen"
+        "Dwayne"
       ]
     }
   ],
-  "gender": "female",
-  "birthDate": "1970-01-01",
+  "gender": "male",
+  "birthDate": "1970-03-03",
   "resourceType": "Patient"
 }'
 
