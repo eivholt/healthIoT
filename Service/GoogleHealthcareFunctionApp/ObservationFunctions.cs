@@ -16,11 +16,17 @@ using Google.Apis.Requests;
 using Google.Apis.CloudHealthcare.v1beta1.Data;
 using System.Net.Http;
 using System.Net.Http.Headers;
+using System.Collections.Generic;
 
 namespace GoogleHealthcareFunctionApp
 {
     public static class ObservationFunctions
     {
+        private const string ProjectId = "iothealthcare-269209";
+        private const string Location = "europe-west4";
+        private const string DatasetId = "IoTHealthcareDataset";
+        private const string FhirStoreId = "ObservationsDataStore";
+
         [FunctionName("PatchObservation")]
         public static async Task<IActionResult> Run(
             [HttpTrigger(AuthorizationLevel.Function, "get", "post", Route = null)] HttpRequest req,
@@ -28,50 +34,70 @@ namespace GoogleHealthcareFunctionApp
         {
             log.LogInformation("C# HTTP trigger function PatchObservation processed a request.");
 
-            int? hrValue = null;
+            using (var cloudHealthcareService = CreateCloudHealthcareService(executionContext))
+            {
+                try
+                {
+                    string requestBody = await new StreamReader(req.Body).ReadToEndAsync();
+                    var requestJson = JsonConvert.DeserializeObject<JObject>(requestBody);
 
-            CloudHealthcareService cloudHealthcareService = new CloudHealthcareService(new BaseClientService.Initializer
+                    var telemetryDictionary = new Dictionary<string, object>();
+                    ExtractTelemetry(requestJson, telemetryDictionary);
+                    LogTelemetry(log, telemetryDictionary);
+
+                    // Observation id to patch
+                    var resourceId = "58bfeb6f-f3bd-424c-a6f9-2815af956ae9";
+                    // The name of the resource to patch.
+                    string resourceName = $"projects/{ProjectId}/locations/{Location}/datasets/{DatasetId}/fhirStores/{FhirStoreId}/fhir/Observation/{resourceId}";
+
+                    Data.HttpBody patchBody = new Data.HttpBody();
+
+                    var jsonPatch = new JArray();
+                    var patchValue = new JObject();
+                    patchValue.Add("op", "replace");
+                    patchValue.Add("path", "/valueQuantity/value");
+                    patchValue.Add("value", hrValue.Value);
+                    jsonPatch.Add(patchValue);
+
+                    patchBody.Data = jsonPatch.ToString();
+
+                    var patchRequest =
+                        cloudHealthcareService.Projects.Locations.Datasets.FhirStores.Fhir.Patch(patchBody, resourceName);
+
+                    JObject response = patchRequest.PatchAsJObjectAsync(patchBody).Result;
+
+                    return new OkObjectResult(response);
+                }
+                catch (Exception ex)
+                {
+                    return new BadRequestObjectResult(ex);
+                }
+            }
+        }
+
+        private static void ExtractTelemetry(JObject requestJson, Dictionary<string, object> telemetryDictionary)
+        {
+            foreach (JProperty capability in requestJson.SelectToken("device.telemetry.*"))
+            {
+                telemetryDictionary.Add(capability.Name, ((JValue)capability.Value["value"]).Value);
+            }
+        }
+
+        private static void LogTelemetry(ILogger log, Dictionary<string, object> telemetryDictionary)
+        {
+            foreach (var capability in telemetryDictionary)
+            {
+                log.LogInformation($"Found {capability.Key}: {capability.Value} ({capability.Value.GetType().Name}).");
+            }
+        }
+
+        private static CloudHealthcareService CreateCloudHealthcareService(ExecutionContext executionContext)
+        {
+            return new CloudHealthcareService(new BaseClientService.Initializer
             {
                 HttpClientInitializer = GetCredential(executionContext),
                 ApplicationName = "GoogleHealthcareFunctionApp/0.1"
             });
-
-            string requestBody = await new StreamReader(req.Body).ReadToEndAsync();
-            JObject requestJson = JObject.Parse(requestBody);
-            //hrValue = requestJson.SelectToken("device.telemetry").First.SelectToken("hr.value").Value<int>();
-            hrValue = requestJson.SelectToken("device.telemetry.*.hr.value").Value<int>();
-
-            if (!hrValue.HasValue)
-            {
-                return new NotFoundObjectResult(requestJson);
-            }
-
-            var projectId = "iothealthcare-269209";
-            var location = "europe-west4";
-            var datasetId = "IoTHealthcareDataset";
-            var fhirStoreId = "ObservationsDataStore";
-            var resourceId = "58bfeb6f-f3bd-424c-a6f9-2815af956ae9";
-
-            // The name of the resource to patch.
-            string name = $"projects/{projectId}/locations/{location}/datasets/{datasetId}/fhirStores/{fhirStoreId}/fhir/Observation/{resourceId}";
-
-            Data.HttpBody patchBody = new Data.HttpBody();
-
-            var jsonPatch = new JArray();
-            var patchValue = new JObject();
-            patchValue.Add("op", "replace");
-            patchValue.Add("path", "/valueQuantity/value");
-            patchValue.Add("value", hrValue.Value);
-            jsonPatch.Add(patchValue);
-
-            patchBody.Data = jsonPatch.ToString();
-
-            var patchRequest =
-                cloudHealthcareService.Projects.Locations.Datasets.FhirStores.Fhir.Patch(patchBody, name);
-
-            JObject response = patchRequest.PatchAsJObjectAsync(patchBody).Result;
-
-            return new OkObjectResult(response);
         }
 
         public static GoogleCredential GetCredential(ExecutionContext executionContext)
