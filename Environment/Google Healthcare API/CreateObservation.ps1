@@ -4,10 +4,10 @@ $PROJECT_ID = "iothealthcare-269209"
 $LOCATION = "europe-west4"
 $DATASET_ID = "IoTHealthcareDataset"
 $FHIR_STORE_ID = "ObservationsDataStore"
-#$PATIENT_ID = "9f6a2621-0f66-464f-bd9b-f6a54f2222de" #Ripley
+$PATIENT_ID = "9f6a2621-0f66-464f-bd9b-f6a54f2222de" #Ripley
 #$PATIENT_ID = "d0be3465-6956-46b0-96fb-9f844a093902" #Weyland
-$PATIENT_ID = "1c8fa469-2b2b-4da2-9205-51177c127244" #Hicks
-$ENCOUNTER_ID = "5accad37-c56d-469d-9629-23e9a552c9a1"
+#$PATIENT_ID = "1c8fa469-2b2b-4da2-9205-51177c127244" #Hicks
+$ENCOUNTER_ID = "5accad37-c56d-469d-9629-23e9a552c9a1" #Ripley encounter 1
 $DATETIMENOW = Get-Date -Format o
 $BPM_VALUE = Get-Random -Minimum 50 -Maximum 220
 
