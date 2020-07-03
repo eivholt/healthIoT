@@ -41,17 +41,14 @@ namespace GoogleHealthcareFunctionApp
                     string requestBody = await new StreamReader(req.Body).ReadToEndAsync();
                     var requestJson = JsonConvert.DeserializeObject<JObject>(requestBody) as dynamic;
 
-                    var telemetryDictionary = new Dictionary<string, object>();
-                    ExtractTelemetry(requestJson, telemetryDictionary);
-                    LogTelemetry(log, telemetryDictionary);
+                    var cloudPropertiesDictionary = ExtractCloudProperties(requestJson);
+                    LogProperties(log, cloudPropertiesDictionary);
+                    var telemetryDictionary = ExtractTelemetry(requestJson);
+                    LogProperties(log, telemetryDictionary);
 
-                    // Patient id to add observation to
-                    var patientId = "9f6a2621-0f66-464f-bd9b-f6a54f2222de";
-                    // Encounter id to add observation to
-                    var encounterId = "5accad37-c56d-469d-9629-23e9a552c9a1";
                     // The name of the resource to create.
                     string parent = $"projects/{ProjectId}/locations/{Location}/datasets/{DatasetId}/fhirStores/{FhirStoreId}";
-                    var createBody = CreateObservationHttpBody(requestJson, telemetryDictionary, patientId, encounterId);
+                    var createBody = CreateObservationHttpBody(requestJson, telemetryDictionary, cloudPropertiesDictionary["patientId"], cloudPropertiesDictionary["encounterId"]);
 
                     var createRequest =
                         cloudHealthcareService.Projects.Locations.Datasets.FhirStores.Fhir.Create(createBody, parent, "Observation");
@@ -81,10 +78,7 @@ namespace GoogleHealthcareFunctionApp
             observation.effectiveDateTime = requestJson.timestamp;
             dynamic observationCode = new JObject();
             observationCode.coding = new JArray() as dynamic;
-            dynamic observationCoding = new JObject();
-            observationCoding.system = "http://loinc.org";
-            observationCoding.code = "8867-4";
-            observationCoding.display = "Heart rate";
+            dynamic observationCoding = MapCapabilityToObservationCoding();
             observationCode.coding.Add(observationCoding);
             observation.code = observationCode;
             dynamic observationValueQuantity = new JObject();
@@ -99,19 +93,44 @@ namespace GoogleHealthcareFunctionApp
             return createBody;
         }
 
-        private static void ExtractTelemetry(JObject requestJson, Dictionary<string, object> telemetryDictionary)
+        private static dynamic MapCapabilityToObservationCoding()
         {
+            dynamic observationCoding = new JObject();
+            observationCoding.system = "http://loinc.org";
+            observationCoding.code = "8867-4";
+            observationCoding.display = "Heart rate";
+            return observationCoding;
+        }
+
+        private static Dictionary<string, object> ExtractCloudProperties(JObject requestJson)
+        {
+            var cloudPropertiesDictionary = new Dictionary<string, object>();
+
+            foreach (JProperty property in requestJson.SelectToken("device.cloudProperties"))
+            {
+                cloudPropertiesDictionary.Add(property.Name, ((JValue)property.Value["value"]).Value);
+            }
+
+            return cloudPropertiesDictionary;
+        }
+
+        private static Dictionary<string, object> ExtractTelemetry(JObject requestJson)
+        {
+            var telemetryDictionary = new Dictionary<string, object>();
+
             foreach (JProperty capability in requestJson.SelectToken("device.telemetry.*"))
             {
                 telemetryDictionary.Add(capability.Name, ((JValue)capability.Value["value"]).Value);
             }
+
+            return telemetryDictionary;
         }
 
-        private static void LogTelemetry(ILogger log, Dictionary<string, object> telemetryDictionary)
+        private static void LogProperties(ILogger log, Dictionary<string, object> dictionary)
         {
-            foreach (var capability in telemetryDictionary)
+            foreach (var property in dictionary)
             {
-                log.LogInformation($"Found {capability.Key}: {capability.Value} ({capability.Value.GetType().Name}).");
+                log.LogInformation($"Found {property.Key}: {property.Value} ({property.Value.GetType().Name}).");
             }
         }
 
