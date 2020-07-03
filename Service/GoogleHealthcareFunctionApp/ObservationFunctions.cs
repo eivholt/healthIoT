@@ -39,7 +39,8 @@ namespace GoogleHealthcareFunctionApp
                 try
                 {
                     string requestBody = await new StreamReader(req.Body).ReadToEndAsync();
-                    var requestJson = JsonConvert.DeserializeObject<JObject>(requestBody) as dynamic;
+                    var jsonSerializerSettings = new JsonSerializerSettings { DateParseHandling = DateParseHandling.None };
+                    var requestJson = JsonConvert.DeserializeObject<JObject>(requestBody, jsonSerializerSettings);
 
                     var cloudPropertiesDictionary = ExtractCloudProperties(requestJson);
                     LogProperties(log, cloudPropertiesDictionary);
@@ -48,14 +49,21 @@ namespace GoogleHealthcareFunctionApp
 
                     // The name of the resource to create.
                     string parent = $"projects/{ProjectId}/locations/{Location}/datasets/{DatasetId}/fhirStores/{FhirStoreId}";
-                    var createBody = CreateObservationHttpBody(requestJson, telemetryDictionary, cloudPropertiesDictionary["patientId"], cloudPropertiesDictionary["encounterId"]);
 
-                    var createRequest =
-                        cloudHealthcareService.Projects.Locations.Datasets.FhirStores.Fhir.Create(createBody, parent, "Observation");
+                    var googleHealthcareApiResponse = new JArray();
+                    
+                    foreach(var telemetry in telemetryDictionary)
+                    {
+                        var createBody = CreateObservationHttpBody(requestJson.Value<string>("timestamp"), telemetry, cloudPropertiesDictionary["patientId"].ToString(), cloudPropertiesDictionary["encounterId"].ToString());
 
-                    JObject response = createRequest.SendAsJObjectAsync(createBody).Result;
+                        var createRequest =
+                            cloudHealthcareService.Projects.Locations.Datasets.FhirStores.Fhir.Create(createBody, parent, "Observation");
 
-                    return new OkObjectResult(response);
+                        JObject response = createRequest.SendAsJObjectAsync(createBody).Result;
+                        googleHealthcareApiResponse.Add(response);
+                    }
+                    
+                    return new OkObjectResult(googleHealthcareApiResponse);
                 }
                 catch (Exception ex)
                 {
@@ -64,27 +72,35 @@ namespace GoogleHealthcareFunctionApp
             }
         }
 
-        private static HttpBody CreateObservationHttpBody(dynamic requestJson, Dictionary<string, object> telemetryDictionary, string patientId, string encounterId)
+        private static HttpBody CreateObservationHttpBody(string timestamp, KeyValuePair<string, object> telemetry, string patientId, string encounterId)
         {
+            var codingTemplate = GetObservationCodingTemplate(telemetry.Key);
+
             Data.HttpBody createBody = new Data.HttpBody();
 
             var observationJson = new JObject();
+            
             dynamic observation = observationJson;
             observation.resourceType = "Observation";
             observation.status = "final";
+            
             dynamic observationSubject = new JObject();
             observationSubject.reference = $"Patient/{patientId}";
             observation.subject = observationSubject;
-            observation.effectiveDateTime = requestJson.timestamp;
+            observation.effectiveDateTime = timestamp;
+            
             dynamic observationCode = new JObject();
             observationCode.coding = new JArray() as dynamic;
-            dynamic observationCoding = MapCapabilityToObservationCoding();
+            
+            dynamic observationCoding = MapCapabilityToObservationCoding(codingTemplate);
             observationCode.coding.Add(observationCoding);
             observation.code = observationCode;
+            
             dynamic observationValueQuantity = new JObject();
-            observationValueQuantity.value = telemetryDictionary["hr"];
-            observationValueQuantity.unit = "bpm";
+            observationValueQuantity.value = telemetry.Value;
+            observationValueQuantity.unit = codingTemplate["unit"];
             observation.valueQuantity = observationValueQuantity;
+            
             dynamic observationContext = new JObject();
             observationContext.reference = $"Encounter/{encounterId}";
             observation.context = observationContext;
@@ -93,13 +109,43 @@ namespace GoogleHealthcareFunctionApp
             return createBody;
         }
 
-        private static dynamic MapCapabilityToObservationCoding()
+        private static JObject MapCapabilityToObservationCoding(Dictionary<string, string> observationCodingTemplate)
         {
             dynamic observationCoding = new JObject();
-            observationCoding.system = "http://loinc.org";
-            observationCoding.code = "8867-4";
-            observationCoding.display = "Heart rate";
+            observationCoding.system = observationCodingTemplate["system"];
+            observationCoding.code = observationCodingTemplate["code"];
+            observationCoding.display = observationCodingTemplate["display"];
             return observationCoding;
+        }
+
+        private static Dictionary<string, string> GetObservationCodingTemplate(string observationType)
+        {
+            var template = new Dictionary<string, string>();
+            template.Add("system", "http://loinc.org");
+
+            switch (observationType)
+            {
+                case "hr":
+                    {
+                        template.Add("code", "8867-4");
+                        template.Add("display", "Heart rate");
+                        template.Add("unit", "bpm");
+                        break;
+                    }
+                case "spo2":
+                    {
+                        template.Add("code", "2708-6");
+                        template.Add("display", "Oxygen Saturation");
+                        template.Add("unit", "%");
+                        break;
+                    }
+                default:
+                    {
+                        throw new InvalidOperationException("Unrecognized template type for observation type.");
+                    }
+            }
+
+            return template;
         }
 
         private static Dictionary<string, object> ExtractCloudProperties(JObject requestJson)
