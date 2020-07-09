@@ -28,8 +28,18 @@
 #include "MAX30105.h"
 #include "spo2_algorithm.h"
 #include "LoRaWAN.h"
+#include "Adafruit_EPD.h"
 
-#define myLed 13 // red led
+#define EPD_CS     10
+#define EPD_DC      9
+#define SRAM_CS     8//11
+#define EPD_RESET   5 // can set to -1 and share with microcontroller Reset!
+#define EPD_BUSY    4 // can set to -1 to not use a pin (will wait a fixed delay)
+
+/* 1.54" tricolor EPD */
+Adafruit_IL0373 display(152, 152, EPD_DC, EPD_RESET, EPD_CS, SRAM_CS, EPD_BUSY);
+#define COLOR1 EPD_BLACK
+#define COLOR2 EPD_RED
 
 static byte mydata[4];
 
@@ -60,10 +70,10 @@ byte pulseLED = 13; //Must be on PWM pin
 void setup()
 {
   Serial.begin(115200); // initialize serial communication at 115200 bits per second:
-//  while (!Serial) {
-//    ; // wait for serial port to connect. Needed for native USB port only
-//  }
-  pinMode(pulseLED, OUTPUT);
+  while (!Serial) {
+    ; // wait for serial port to connect. Needed for native USB port only
+  }
+  //pinMode(pulseLED, OUTPUT);
 
   // Initialize sensor
   if (!particleSensor.begin(Wire, I2C_SPEED_FAST)) //Use default I2C port, 400kHz speed
@@ -198,9 +208,36 @@ void loop()
           Serial.println(devtemp, DEC);
           
           //delay(15000);
-          STM32L0.stop(15000);
+          printReadings(String(spo2), String(heartRate));
+          STM32L0.stop(180000);
       }
       
     }
   }
+}
+
+void printReadings(String spo2, String hr)
+{
+  display.begin();
+  display.clearBuffer();
+  
+  display.setCursor(4, 4);
+  display.setTextSize(2);
+  display.setTextColor(COLOR1);
+  display.setTextWrap(false);
+  display.print("SpO2");
+
+  display.setCursor(10, 26);
+  display.setTextSize(6);
+  display.print(spo2);
+
+  display.setCursor(4, 84);
+  display.setTextSize(2);
+  display.print("Heart rate");
+
+  display.setCursor(10, 106);
+  display.setTextSize(6);
+  display.print(hr);
+  
+  display.display();
 }
