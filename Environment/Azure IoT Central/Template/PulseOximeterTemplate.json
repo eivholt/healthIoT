@@ -1,0 +1,88 @@
+{
+  "@id": "urn:iotaehr:PulseOximeterTemplate_42p:1",
+  "@type": "CapabilityModel",
+  "implements": [
+    {
+      "@id": "urn:iotaehr:PulseOximeterTemplate_42p:gv2s2py7d:1",
+      "@type": "InterfaceInstance",
+      "displayName": {
+        "en": "Interface"
+      },
+      "name": "PulseOximeterTemplate_338",
+      "schema": {
+        "@id": "urn:iotaehr:PulseOximeterTemplate_338:1",
+        "@type": "Interface",
+        "displayName": {
+          "en": "Interface"
+        },
+        "contents": [
+          {
+            "@id": "urn:iotaehr:PulseOximeterTemplate_338:devtemp:1",
+            "@type": [
+              "Telemetry",
+              "SemanticType/Temperature"
+            ],
+            "description": {
+              "en": "Device MCU temperature"
+            },
+            "displayName": {
+              "en": "Device temperature"
+            },
+            "name": "devtemp",
+            "schema": "float",
+            "unit": "Units/Temperature/celsius"
+          },
+          {
+            "@id": "urn:iotaehr:PulseOximeterTemplate_338:spo2:1",
+            "@type": "Telemetry",
+            "description": {
+              "en": "Percentage of hemoglobin molecules in blood that is saturated with oxygen"
+            },
+            "displayName": {
+              "en": "SPO2"
+            },
+            "name": "spo2",
+            "schema": "integer",
+            "unit": "Units/Humidity/percent"
+          },
+          {
+            "@id": "urn:iotaehr:PulseOximeterTemplate_338:hr:1",
+            "@type": "Telemetry",
+            "description": {
+              "en": "Average heart beats per second"
+            },
+            "displayName": {
+              "en": "HR"
+            },
+            "name": "hr",
+            "displayUnit": {
+              "en": "bps"
+            },
+            "schema": "integer"
+          },
+          {
+            "@id": "urn:iotaehr:PulseOximeterTemplate_338:voltage:1",
+            "@type": "Telemetry",
+            "description": {
+              "en": "Millivolts"
+            },
+            "displayName": {
+              "en": "Battery voltage"
+            },
+            "name": "voltage",
+            "displayUnit": {
+              "en": "mV"
+            },
+            "schema": "integer"
+          }
+        ]
+      }
+    }
+  ],
+  "displayName": {
+    "en": "PulseOximeterTemplate"
+  },
+  "@context": [
+    "http://azureiot.com/v1/contexts/IoTModel.json"
+  ]
+}
