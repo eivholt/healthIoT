@@ -1,25 +1,13 @@
 /*
-  Optical SP02 Detection (SPK Algorithm) using the MAX30105 Breakout
-  By: Nathan Seidle @ SparkFun Electronics
-  Date: October 19th, 2016
-  https://github.com/sparkfun/MAX30105_Breakout
-  This demo shows heart rate and SPO2 levels.
+  SPO2 and heart rate sensor with eInk display and LoRaWAN transmission.
+  By: Eivind Holt
+  Date: 14th July 2020
+  https://www.hackster.io/eivholt/global-scale-remote-health-monitor-4d9064
+  https://github.com/eivholt/healthIoT/tree/master/Device/GrasshopperMax3010x
   It is best to attach the sensor to your finger using a rubber band or other tightening 
   device. Humans are generally bad at applying constant pressure to a thing. When you 
   press your finger against the sensor it varies enough to cause the blood in your 
   finger to flow differently which causes the sensor readings to go wonky.
-  This example is based on MAXREFDES117 and RD117_LILYPAD.ino from Maxim. Their example
-  was modified to work with the SparkFun MAX30105 library and to compile under Arduino 1.6.11
-  Please see license file for more info.
-  Hardware Connections (Breakoutboard to Arduino):
-  -5V = 5V (3.3V is allowed)
-  -GND = GND
-  -SDA = A4 (or SDA)
-  -SCL = A5 (or SCL)
-  -INT = Not connected
- 
-  The MAX30105 Breakout can handle 5V or 3.3V I2C logic. We recommend powering the board with 5V
-  but it will also run at 3.3V.
 */
 
 #include "secrets.h"
@@ -41,7 +29,7 @@ Adafruit_IL0373 display(152, 152, EPD_DC, EPD_RESET, EPD_CS, SRAM_CS, EPD_BUSY);
 #define COLOR1 EPD_BLACK
 #define COLOR2 EPD_RED
 
-static byte mydata[4];
+static byte mydata[6];
 
 MAX30105 particleSensor;
 
@@ -187,7 +175,12 @@ void loop()
           mcuTemp = STM32L0.getTemperature();
 
           Serial.print(F("VDDA = ")); Serial.println(VDDA, 2);
-          Serial.print(F("VBAT = ")); Serial.println(VBAT, 2); 
+          Serial.print(F("VBAT = ")); Serial.println(VBAT, 2);
+          int voltage = 0;
+          if(VBAT > 0)
+          {
+            voltage = VBAT*1000;
+          } else { voltage = VDDA*1000; }
           //if(VUSB ==  1)  Serial.println("USB Connected!"); 
           Serial.print(F("STM32L0 MCU Temperature = ")); Serial.println(mcuTemp);
 
@@ -197,6 +190,8 @@ void loop()
           mydata[1] = constrain(heartRate, 1, 255);
           mydata[2] = devtemp >> 8;
           mydata[3] = devtemp;
+          mydata[4] = voltage >> 8;
+          mydata[5] = voltage;
 
           LoRaWAN.sendPacket(mydata, sizeof(mydata));
           
@@ -205,7 +200,9 @@ void loop()
           Serial.print(F(", SPO2="));
           Serial.print(spo2, DEC);
           Serial.print(F(", mcuTemp="));
-          Serial.println(devtemp, DEC);
+          Serial.print(devtemp, DEC);
+          Serial.print(F(", voltage="));
+          Serial.println(voltage, DEC);
           
           //delay(15000);
           printReadings(String(spo2), String(heartRate));
