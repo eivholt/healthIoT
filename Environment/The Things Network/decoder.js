@@ -8,7 +8,7 @@ function Decoder(bytes, port) {
     decoded.spo2 = bytes[0];
     decoded.hr = bytes[1];
     decoded.devtemp = (bytes[2]<<8 | bytes[3])/100;
-    decoded.voltage = (bytes[4]<<8 | bytes[5])/1000;
+    decoded.voltage = (bytes[4]<<8 | bytes[5]);
   }
 
   return decoded;
